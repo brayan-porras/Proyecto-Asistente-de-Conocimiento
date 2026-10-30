@@ -1,5 +1,6 @@
 import logging
 import time
+import unicodedata
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -12,7 +13,7 @@ from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedR
 from app.chunking import chunk_sections
 from app.config import Settings, get_settings
 from app.embeddings import Embedder, SentenceTransformerEmbedder
-from app.models import DocumentInfo, IngestResponse
+from app.models import DocumentInfo, IngestResponse, SearchHit, SearchRequest
 from app.parsers import ParseError, doc_type_of, parse_document
 from app.store import VectorStore
 
@@ -21,9 +22,19 @@ logger = logging.getLogger("ingestion")
 _STORE_ERRORS = (ResponseHandlingException, UnexpectedResponse)
 
 
+def _normalize(name: str) -> str:
+    # Windows y macOS pueden entregar los acentos descompuestos (NFD).
+    return unicodedata.normalize("NFC", name)
+
+
 @lru_cache
 def get_embedder() -> Embedder:
-    return SentenceTransformerEmbedder(get_settings().embedding_model)
+    settings = get_settings()
+    return SentenceTransformerEmbedder(
+        settings.embedding_model,
+        settings.embedding_query_prefix,
+        settings.embedding_passage_prefix,
+    )
 
 
 @lru_cache
@@ -34,6 +45,7 @@ def get_store() -> VectorStore:
         settings.qdrant_collection,
         settings.hnsw_m,
         settings.hnsw_ef_construct,
+        settings.search_ef,
     )
 
 
@@ -81,7 +93,7 @@ def ingest(
     embedder: Embedder = Depends(get_embedder),
     store: VectorStore = Depends(get_store),
 ) -> IngestResponse:
-    source = Path(file.filename or "").name
+    source = _normalize(Path(file.filename or "").name)
     doc_type = doc_type_of(source)
     if doc_type is None:
         raise HTTPException(415, "Solo se aceptan archivos PDF, TXT y MD")
@@ -97,12 +109,16 @@ def ingest(
         raise HTTPException(422, str(exc)) from exc
 
     chunks = chunk_sections(
-        sections, settings.chunk_size, settings.chunk_overlap, settings.min_chunk_chars
+        sections,
+        settings.chunk_size,
+        settings.chunk_overlap,
+        settings.min_chunk_chars,
+        settings.merge_below_chars,
     )
     if not chunks:
         raise HTTPException(422, "El documento no contiene texto extraíble")
 
-    vectors = embedder.embed([chunk.embedding_text for chunk in chunks])
+    vectors = embedder.embed_documents([chunk.embedding_text for chunk in chunks])
     ingested_at = datetime.now(timezone.utc).isoformat()
     try:
         replaced = store.replace_document(source, doc_type, chunks, vectors, ingested_at)
@@ -117,6 +133,29 @@ def ingest(
         replaced=replaced,
         ingested_at=ingested_at,
     )
+
+
+@app.post(
+    "/search",
+    response_model=list[SearchHit],
+    summary="Buscar chunks relevantes",
+    description="Búsqueda vectorial por similitud. Se puede filtrar por documento "
+    "(`sources`) o por tipo (`doc_type`). Devuelve los chunks con su cita "
+    "(documento, sección y página).",
+    tags=["Búsqueda"],
+)
+def search(
+    request: SearchRequest,
+    embedder: Embedder = Depends(get_embedder),
+    store: VectorStore = Depends(get_store),
+) -> list[SearchHit]:
+    vector = embedder.embed_query(request.query)
+    sources = [_normalize(s) for s in request.sources] if request.sources else None
+    try:
+        return store.search(vector, request.top_k, sources, request.doc_type)
+    except _STORE_ERRORS as exc:
+        logger.exception("Error al buscar en Qdrant")
+        raise HTTPException(503, "Base vectorial no disponible") from exc
 
 
 @app.get(
@@ -141,7 +180,7 @@ def delete_document(
     source: str, store: VectorStore = Depends(get_store)
 ) -> dict[str, int]:
     try:
-        deleted = store.delete_document(source)
+        deleted = store.delete_document(_normalize(source))
     except _STORE_ERRORS as exc:
         raise HTTPException(503, "Base vectorial no disponible") from exc
     if not deleted:

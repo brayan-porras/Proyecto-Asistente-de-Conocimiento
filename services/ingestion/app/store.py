@@ -4,7 +4,7 @@ from collections import defaultdict
 from qdrant_client import QdrantClient
 from qdrant_client import models as qm
 
-from app.models import Chunk, DocumentInfo
+from app.models import Chunk, DocumentInfo, SearchHit
 
 _INDEXED_FIELDS = ("source", "doc_type")
 
@@ -15,6 +15,21 @@ def _source_filter(source: str) -> qm.Filter:
     )
 
 
+def build_filter(
+    sources: list[str] | None = None, doc_type: str | None = None
+) -> qm.Filter | None:
+    conditions: list[qm.Condition] = []
+    if sources:
+        conditions.append(
+            qm.FieldCondition(key="source", match=qm.MatchAny(any=sources))
+        )
+    if doc_type:
+        conditions.append(
+            qm.FieldCondition(key="doc_type", match=qm.MatchValue(value=doc_type))
+        )
+    return qm.Filter(must=conditions) if conditions else None
+
+
 class VectorStore:
     def __init__(
         self,
@@ -22,11 +37,13 @@ class VectorStore:
         collection: str,
         hnsw_m: int,
         hnsw_ef_construct: int,
+        search_ef: int = 64,
     ) -> None:
         self._client = client
         self._collection = collection
         self._hnsw_m = hnsw_m
         self._hnsw_ef_construct = hnsw_ef_construct
+        self._search_ef = search_ef
 
     def ensure_collection(self, dim: int) -> None:
         if self._client.collection_exists(self._collection):
@@ -81,6 +98,33 @@ class VectorStore:
         ]
         self._client.upload_points(self._collection, points, batch_size=128)
         return existing > 0
+
+    def search(
+        self,
+        vector: list[float],
+        top_k: int,
+        sources: list[str] | None = None,
+        doc_type: str | None = None,
+    ) -> list[SearchHit]:
+        result = self._client.query_points(
+            self._collection,
+            query=vector,
+            limit=top_k,
+            query_filter=build_filter(sources, doc_type),
+            search_params=qm.SearchParams(hnsw_ef=self._search_ef),
+            with_payload=True,
+        )
+        return [
+            SearchHit(
+                text=point.payload["text"],
+                source=point.payload["source"],
+                section=point.payload.get("section"),
+                page=point.payload.get("page"),
+                chunk_index=point.payload["chunk_index"],
+                score=point.score,
+            )
+            for point in result.points
+        ]
 
     def list_documents(self) -> list[DocumentInfo]:
         counts: dict[str, int] = defaultdict(int)

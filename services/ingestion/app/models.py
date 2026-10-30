@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 @dataclass(frozen=True)
@@ -38,3 +38,23 @@ class DocumentInfo(BaseModel):
     doc_type: str
     chunks: int
     ingested_at: str
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1, description="Consulta en lenguaje natural")
+    top_k: int = Field(default=5, ge=1, le=20, description="Cantidad de chunks a devolver")
+    sources: list[str] | None = Field(
+        default=None, description="Limita la búsqueda a estos documentos"
+    )
+    doc_type: str | None = Field(
+        default=None, description="Limita la búsqueda a un tipo: pdf, md o txt"
+    )
+
+
+class SearchHit(BaseModel):
+    text: str
+    source: str
+    section: str | None
+    page: int | None
+    chunk_index: int
+    score: float

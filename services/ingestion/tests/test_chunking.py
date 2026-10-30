@@ -30,6 +30,18 @@ def test_pdf_page_is_preserved():
     assert chunks[0].page == 4
 
 
+def test_short_intro_is_merged_with_next_piece():
+    intro = "Se requieren checkpointers para:"
+    body = ("detalle largo " * 63).strip()
+    text = f"{intro}\n\n{body}"
+    unmerged = chunk_sections([Section(text, "S")], 900, 100, 20)
+    merged = chunk_sections([Section(text, "S")], 900, 100, 20, merge_below=120)
+    assert intro in [c.text for c in unmerged]
+    assert intro not in [c.text for c in merged]
+    assert merged[0].text.startswith(intro)
+    assert "detalle largo" in merged[0].text
+
+
 def test_tiny_chunks_are_dropped():
     assert chunk_sections([Section("ok", "S")], 1000, 100, 20) == []
 

@@ -7,5 +7,62 @@ services:
       - qdrant_storage:/qdrant/storage
     restart: unless-stopped
 
+  ingestion:
+    build:
+      context: ./services/ingestion
+      args:
+        EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-docs}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+      EMBEDDING_QUERY_PREFIX: "${EMBEDDING_QUERY_PREFIX:-query: }"
+      EMBEDDING_PASSAGE_PREFIX: "${EMBEDDING_PASSAGE_PREFIX:-passage: }"
+    ports:
+      - "8001:8001"
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  agent:
+    build: ./services/agent
+    image: asistente-agent
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      INGESTION_URL: http://ingestion:8001
+    ports:
+      - "8002:8002"
+    depends_on:
+      ingestion:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      AGENT_URL: http://agent:8002
+      INGESTION_URL: http://ingestion:8001
+    ports:
+      - "8501:8501"
+    depends_on:
+      agent:
+        condition: service_healthy
+    restart: unless-stopped
+
+  seed:
+    image: asistente-agent
+    profiles: ["seed"]
+    working_dir: /work
+    user: root
+    volumes:
+      - ./scripts:/work/scripts:ro
+      - ./data:/work/data
+    command: python scripts/load_dataset.py --ingestion-url http://ingestion:8001
+    depends_on:
+      ingestion:
+        condition: service_healthy
+
 volumes:
   qdrant_storage:

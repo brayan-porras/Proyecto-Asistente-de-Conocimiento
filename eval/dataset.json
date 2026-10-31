@@ -1,0 +1,171 @@
+[
+  {
+    "id": "d01",
+    "category": "docs",
+    "question": "¿Qué error se produce cuando un grafo de LangGraph alcanza el máximo de pasos y cómo se aumenta el límite?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-errors-GRAPH_RECURSION_LIMIT.md", "langgraph-graph-api.md"],
+    "reference": "Se lanza GraphRecursionError (GRAPH_RECURSION_LIMIT). Se aumenta pasando un valor mayor de recursion_limit en el config al invocar el grafo, por ejemplo {\"recursion_limit\": 1000}."
+  },
+  {
+    "id": "d02",
+    "category": "docs",
+    "question": "¿Qué hay que hacer para corregir el error MISSING_CHECKPOINTER?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-errors-MISSING_CHECKPOINTER.md"],
+    "reference": "Pasar un checkpointer (por ejemplo InMemorySaver) al método compile() del StateGraph, o al decorador @entrypoint en la Functional API."
+  },
+  {
+    "id": "d03",
+    "category": "docs",
+    "question": "¿Cómo se soluciona el error INVALID_CONCURRENT_GRAPH_UPDATE cuando varios nodos escriben la misma clave del estado en paralelo?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"],
+    "reference": "Definir un reducer para esa clave del estado (por ejemplo Annotated con operator.add) que combine los valores que devuelven los nodos en paralelo."
+  },
+  {
+    "id": "d04",
+    "category": "docs",
+    "question": "¿Cómo se agrega un subgrafo como nodo de un grafo padre?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-use-subgraphs.md"],
+    "reference": "Si el grafo padre y el subgrafo comparten claves de estado, se pasa el subgrafo compilado directamente a add_node. Si tienen esquemas de estado distintos, se invoca el subgrafo dentro de una función nodo que transforma el estado."
+  },
+  {
+    "id": "d05",
+    "category": "docs",
+    "question": "¿Y si el subgrafo no comparte claves de estado con el grafo padre?",
+    "after": "d04",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-use-subgraphs.md"],
+    "reference": "Se invoca el subgrafo dentro de una función nodo que transforma el estado del padre al estado del subgrafo antes de llamarlo, y transforma el resultado de vuelta al estado del padre antes de devolverlo."
+  },
+  {
+    "id": "d06",
+    "category": "docs",
+    "question": "¿Qué es time travel en LangGraph y qué diferencia hay entre replay y fork?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-use-time-travel.md"],
+    "reference": "Time travel usa los checkpoints para volver a un punto anterior. Replay reintenta desde un checkpoint previo; fork ramifica desde un checkpoint con el estado modificado para explorar un camino alternativo."
+  },
+  {
+    "id": "d07",
+    "category": "docs",
+    "question": "¿Cómo se pausa un grafo para pedir aprobación humana y cómo se reanuda?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-interrupts.md"],
+    "reference": "Se llama a interrupt() dentro de un nodo con un valor serializable a JSON, que se muestra al llamador. Se reanuda invocando de nuevo el grafo con Command(resume=...), cuyo valor es el que devuelve interrupt()."
+  },
+  {
+    "id": "d08",
+    "category": "docs",
+    "question": "¿Qué checkpointer se usa con Postgres en LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-add-memory.md", "langgraph-checkpointers.md", "langgraph-persistence.md"],
+    "reference": "PostgresSaver, del paquete langgraph.checkpoint.postgres, creado con PostgresSaver.from_conn_string(DB_URI). InMemorySaver es solo para desarrollo."
+  },
+  {
+    "id": "d09",
+    "category": "docs",
+    "question": "¿Para qué sirve el parámetro timeout en requests y qué pasa si no se define?",
+    "expected_route": "docs",
+    "expected_sources": ["requests-docs.pdf"],
+    "reference": "Indica cuántos segundos esperar una respuesta antes de dejar de esperar y lanza requests.exceptions.Timeout. Si no se define, requests no expira nunca y el programa puede quedarse colgado indefinidamente."
+  },
+  {
+    "id": "d10",
+    "category": "docs",
+    "question": "¿Qué ventaja tiene usar un objeto Session en requests?",
+    "expected_route": "docs",
+    "expected_sources": ["requests-docs.pdf"],
+    "reference": "Persiste parámetros y cookies entre todas las peticiones de la sesión y reutiliza la conexión TCP mediante el pool de conexiones de urllib3, lo que mejora el rendimiento al llamar varias veces al mismo host."
+  },
+  {
+    "id": "d11",
+    "category": "docs",
+    "question": "What are the stream modes available to stream a LangGraph graph?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-streaming.md", "langgraph-graph-api.md"],
+    "reference": "Los modos son updates, values, messages, custom, checkpoints, tasks y debug (se pueden combinar pasando una lista a stream_mode). La respuesta debe estar en inglés."
+  },
+  {
+    "id": "d12",
+    "category": "docs",
+    "question": "¿Cuándo conviene usar la Graph API y cuándo la Functional API de LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-choosing-apis.md"],
+    "reference": "Graph API para flujos complejos con visualización, estado explícito compartido, ramificación condicional y ejecución en paralelo. Functional API para cambios mínimos sobre código procedural existente, control de flujo estándar y flujos lineales con prototipado rápido."
+  },
+  {
+    "id": "d13",
+    "category": "docs",
+    "question": "¿Qué comando inicia un servidor local de LangGraph para desarrollo?",
+    "expected_route": "docs",
+    "expected_sources": ["langgraph-local-server.md"],
+    "reference": "langgraph dev, del paquete langgraph-cli, que inicia el Agent Server en modo en memoria, adecuado para desarrollo y pruebas."
+  },
+  {
+    "id": "r01",
+    "category": "research",
+    "question": "¿Cuál es la última versión estable de LangGraph publicada en PyPI?",
+    "expected_route": "research",
+    "expected_sources": [],
+    "reference": "Debe indicar un número de versión concreto de LangGraph tomado de la web, con enlace como fuente."
+  },
+  {
+    "id": "r02",
+    "category": "research",
+    "question": "¿Qué novedades trae la última versión de LangGraph?",
+    "expected_route": "research",
+    "expected_sources": [],
+    "reference": "Debe resumir cambios o funciones concretas de una versión reciente de LangGraph, con enlaces web como fuente."
+  },
+  {
+    "id": "r03",
+    "category": "research",
+    "question": "¿LangGraph o CrewAI: cuál conviene para un sistema multiagente?",
+    "expected_route": "research",
+    "expected_sources": [],
+    "reference": "Debe comparar ambos frameworks con criterios concretos y citar fuentes web."
+  },
+  {
+    "id": "r04",
+    "category": "research",
+    "question": "¿Cuál es la versión más reciente de la librería requests de Python?",
+    "expected_route": "research",
+    "expected_sources": [],
+    "reference": "Debe indicar un número de versión concreto de requests tomado de la web, con enlace como fuente."
+  },
+  {
+    "id": "c01",
+    "category": "direct",
+    "question": "hola",
+    "expected_route": "direct",
+    "expected_sources": [],
+    "reference": "Un saludo breve y amable, sin citas ni datos inventados."
+  },
+  {
+    "id": "c02",
+    "category": "direct",
+    "question": "¿Qué puedes hacer?",
+    "expected_route": "direct",
+    "expected_sources": [],
+    "reference": "Explica brevemente que ayuda con documentación para desarrolladores e investigación técnica, sin citas."
+  },
+  {
+    "id": "c03",
+    "category": "direct",
+    "question": "gracias, eso era todo",
+    "expected_route": "direct",
+    "expected_sources": [],
+    "reference": "Una despedida o agradecimiento breve y cortés, sin citas."
+  },
+  {
+    "id": "c04",
+    "category": "direct",
+    "question": "¿Quién eres?",
+    "expected_route": "direct",
+    "expected_sources": [],
+    "reference": "Se presenta como asistente de documentación e investigación para desarrolladores, sin citas ni datos inventados."
+  }
+]

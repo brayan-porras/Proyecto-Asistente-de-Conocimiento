@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     history_turns: int = 6
 
+    langfuse_public_key: str = ""
+    langfuse_secret_key: SecretStr = SecretStr("")
+    langfuse_host: str = "https://cloud.langfuse.com"
+
 
 @lru_cache
 def get_settings() -> Settings:

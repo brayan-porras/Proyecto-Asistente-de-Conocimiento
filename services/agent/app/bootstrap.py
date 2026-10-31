@@ -12,6 +12,7 @@ from app.infrastructure.groq_tasks import (
     GroqSupervisorTasks,
 )
 from app.infrastructure.ingestion_client import IngestionClient
+from app.infrastructure.observability import build_callbacks
 from app.infrastructure.web_search import build_web_search
 
 
@@ -48,4 +49,5 @@ def build_assistant(settings: Settings) -> Assistant:
         ingestion,
         build_checkpointer(),
         settings.history_turns,
+        build_callbacks(settings),
     )

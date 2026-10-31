@@ -6,7 +6,7 @@ from qdrant_client import models as qm
 
 from app.models import Chunk, DocumentInfo, SearchHit
 
-_INDEXED_FIELDS = ("source", "doc_type")
+_INDEXED_FIELDS = ("source", "doc_type", "content_hash")
 
 
 def _source_filter(source: str) -> qm.Filter:
@@ -46,18 +46,17 @@ class VectorStore:
         self._search_ef = search_ef
 
     def ensure_collection(self, dim: int) -> None:
-        if self._client.collection_exists(self._collection):
-            return
-        self._client.create_collection(
-            collection_name=self._collection,
-            vectors_config=qm.VectorParams(
-                size=dim,
-                distance=qm.Distance.COSINE,
-                hnsw_config=qm.HnswConfigDiff(
-                    m=self._hnsw_m, ef_construct=self._hnsw_ef_construct
+        if not self._client.collection_exists(self._collection):
+            self._client.create_collection(
+                collection_name=self._collection,
+                vectors_config=qm.VectorParams(
+                    size=dim,
+                    distance=qm.Distance.COSINE,
+                    hnsw_config=qm.HnswConfigDiff(
+                        m=self._hnsw_m, ef_construct=self._hnsw_ef_construct
+                    ),
                 ),
-            ),
-        )
+            )
         for field in _INDEXED_FIELDS:
             self._client.create_payload_index(
                 self._collection, field, qm.PayloadSchemaType.KEYWORD
@@ -68,6 +67,42 @@ class VectorStore:
             self._collection, count_filter=_source_filter(source), exact=True
         ).count
 
+    def get_document(self, source: str) -> DocumentInfo | None:
+        chunks = self._count(source)
+        if not chunks:
+            return None
+        records, _ = self._client.scroll(
+            self._collection,
+            scroll_filter=_source_filter(source),
+            limit=1,
+            with_payload=["doc_type", "ingested_at", "content_hash"],
+            with_vectors=False,
+        )
+        payload = records[0].payload or {}
+        return DocumentInfo(
+            source=source,
+            doc_type=payload["doc_type"],
+            chunks=chunks,
+            ingested_at=payload["ingested_at"],
+            content_hash=payload.get("content_hash"),
+        )
+
+    def find_by_hash(self, content_hash: str) -> str | None:
+        records, _ = self._client.scroll(
+            self._collection,
+            scroll_filter=qm.Filter(
+                must=[
+                    qm.FieldCondition(
+                        key="content_hash", match=qm.MatchValue(value=content_hash)
+                    )
+                ]
+            ),
+            limit=1,
+            with_payload=["source"],
+            with_vectors=False,
+        )
+        return records[0].payload["source"] if records else None
+
     def replace_document(
         self,
         source: str,
@@ -75,6 +110,7 @@ class VectorStore:
         chunks: list[Chunk],
         vectors: list[list[float]],
         ingested_at: str,
+        content_hash: str,
     ) -> bool:
         """Reemplaza los chunks previos del mismo documento; devuelve si existian."""
         existing = self._count(source)
@@ -91,6 +127,7 @@ class VectorStore:
                     "page": chunk.page,
                     "chunk_index": chunk.chunk_index,
                     "ingested_at": ingested_at,
+                    "content_hash": content_hash,
                     "text": chunk.text,
                 },
             )

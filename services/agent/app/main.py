@@ -9,6 +9,7 @@ from app.application.supervisor import Assistant
 from app.bootstrap import build_assistant
 from app.domain.errors import AgentError
 from app.infrastructure.config import get_settings
+from app.infrastructure.observability import flush
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("agent")
@@ -20,6 +21,7 @@ def create_app(assistant: Assistant | None = None) -> FastAPI:
         if not hasattr(app.state, "assistant"):
             app.state.assistant = build_assistant(get_settings())
         yield
+        flush()
 
     app = FastAPI(
         title="Asistente de Conocimiento - API de consulta",

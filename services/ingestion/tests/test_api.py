@@ -39,15 +39,31 @@ class FakeStore:
             )
         ]
 
-    def replace_document(self, source, doc_type, chunks, vectors, ingested_at):
+    def replace_document(self, source, doc_type, chunks, vectors, ingested_at, content_hash):
         replaced = source in self.docs
         self.docs[source] = {
             "doc_type": doc_type,
             "chunks": chunks,
             "vectors": vectors,
             "ingested_at": ingested_at,
+            "content_hash": content_hash,
         }
         return replaced
+
+    def get_document(self, source):
+        doc = self.docs.get(source)
+        if not doc:
+            return None
+        return DocumentInfo(
+            source=source,
+            doc_type=doc["doc_type"],
+            chunks=len(doc["chunks"]),
+            ingested_at=doc["ingested_at"],
+            content_hash=doc["content_hash"],
+        )
+
+    def find_by_hash(self, content_hash):
+        return next((s for s, d in self.docs.items() if d["content_hash"] == content_hash), None)
 
     def list_documents(self):
         return [
@@ -88,7 +104,7 @@ def test_ingest_markdown_returns_chunk_count_and_stores_metadata(client, store):
     assert body["source"] == "guia.md"
     assert body["doc_type"] == "md"
     assert body["chunks"] == 2
-    assert body["replaced"] is False
+    assert body["status"] == "created"
     stored = store.docs["guia.md"]
     assert [c.section for c in stored["chunks"]] == ["Guia", "Guia > Uso"]
     assert len(stored["vectors"]) == 2
@@ -101,10 +117,21 @@ def test_ingest_pdf(client, store):
     assert store.docs["manual.pdf"]["chunks"][0].page == 1
 
 
-def test_reingest_marks_replaced(client):
+def test_ingestion_is_incremental(client, store):
     client.post("/ingest", files={"file": ("guia.md", MD)})
-    response = client.post("/ingest", files={"file": ("guia.md", MD)})
-    assert response.json()["replaced"] is True
+    first = store.docs["guia.md"]
+
+    same = client.post("/ingest", files={"file": ("guia.md", MD)})
+    assert same.status_code == 200 and same.json()["status"] == "unchanged"
+    assert same.json()["chunks"] == 2 and store.docs["guia.md"] is first
+
+    changed = client.post("/ingest", files={"file": ("guia.md", MD + b" mas texto nuevo")})
+    assert changed.status_code == 200 and changed.json()["status"] == "updated"
+    assert store.docs["guia.md"]["content_hash"] != first["content_hash"]
+
+    copy = client.post("/ingest", files={"file": ("copia.md", MD + b" mas texto nuevo")})
+    assert copy.json()["status"] == "duplicate" and copy.json()["duplicate_of"] == "guia.md"
+    assert "copia.md" not in store.docs
 
 
 def test_unsupported_type_is_415(client):

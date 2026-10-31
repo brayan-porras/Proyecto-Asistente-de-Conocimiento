@@ -1,3 +1,4 @@
+import time
 import uuid
 from pathlib import Path
 
@@ -10,6 +11,12 @@ AGENTS = {
     "docs": "Documentación",
     "research": "Investigación web",
     "direct": "Respuesta directa",
+}
+UPLOAD_MESSAGES = {
+    "created": "{source}: indexado ({chunks} fragmentos)",
+    "updated": "{source}: actualizado, el contenido cambió ({chunks} fragmentos)",
+    "unchanged": "{source}: sin cambios, ya estaba indexado",
+    "duplicate": "{source}: es idéntico a {duplicate_of}, no se duplicó",
 }
 EXAMPLES = [
     "¿Cómo se agrega un subgrafo como nodo de un grafo padre?",
@@ -39,7 +46,7 @@ def upload_section() -> None:
                 except api.ApiError as exc:
                     st.error(f"{file.name}: {exc}")
                     continue
-            st.success(f"{info['source']}: {info['chunks']} fragmentos")
+            st.success(UPLOAD_MESSAGES[info["status"]].format(**info))
 
 
 def documents_section() -> list[str]:
@@ -107,8 +114,17 @@ def render_steps(body: dict) -> None:
     st.dataframe(rows, hide_index=True, width="stretch")
 
 
-def render_answer(body: dict) -> None:
-    st.markdown(body["answer"])
+def typewriter(text: str):
+    for word in text.split(" "):
+        yield word + " "
+        time.sleep(0.015)
+
+
+def render_answer(body: dict, live: bool = False) -> None:
+    if live:
+        st.write_stream(typewriter(body["answer"]))
+    else:
+        st.markdown(body["answer"])
     if body["external"]:
         st.info("Esta respuesta viene de la web, no de tus documentos indexados.")
     st.caption(
@@ -133,20 +149,36 @@ def render_history() -> None:
                 render_answer(message["body"])
 
 
+def run_stream(question: str, sources: list[str], status) -> dict:
+    body = None
+    for kind, data in api.ask_stream(question, st.session_state.thread_id, sources):
+        if kind == "step":
+            status.write(f"`{data['agent']}.{data['node']}` · {data['ms']} ms · {data['detail'][:90]}")
+        elif kind == "answer":
+            body = data
+        else:
+            raise api.ApiError(data["detail"])
+    if body is None:
+        raise api.ApiError("La conexión terminó sin respuesta")
+    return body
+
+
 def answer(question: str, sources: list[str]) -> None:
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
     with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
-            try:
-                body = api.ask(question, st.session_state.thread_id, sources)
-            except api.ApiError as exc:
-                message = {"role": "assistant", "error": str(exc)}
-                st.error(message["error"])
-            else:
-                message = {"role": "assistant", "body": body}
-                render_answer(body)
+        status = st.status("Pensando...", expanded=True)
+        try:
+            body = run_stream(question, sources, status)
+        except api.ApiError as exc:
+            status.update(label="No se pudo responder", state="error")
+            message = {"role": "assistant", "error": str(exc)}
+            st.error(message["error"])
+        else:
+            status.update(label=f"Listo en {body['total_ms'] / 1000:.1f} s", state="complete", expanded=False)
+            message = {"role": "assistant", "body": body}
+            render_answer(body, live=True)
     st.session_state.messages.append(message)
 
 

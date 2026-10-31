@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import time
 import unicodedata
@@ -6,7 +7,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
@@ -83,11 +84,15 @@ def health() -> dict[str, str]:
     response_model=IngestResponse,
     status_code=201,
     summary="Ingestar un documento",
-    description="Sube un PDF, TXT o MD, lo divide en chunks y lo indexa. "
-    "Si el documento ya existía, reemplaza sus chunks anteriores.",
+    description="Sube un PDF, TXT o MD, lo divide en chunks y lo indexa. La ingesta es "
+    "incremental: si el contenido no cambió respecto al indexado devuelve `unchanged` sin "
+    "recalcular embeddings; si cambió, reemplaza los chunks anteriores (`updated`); y si el "
+    "mismo contenido ya está indexado con otro nombre, no lo duplica (`duplicate`). "
+    "Responde 201 solo cuando se crea un documento nuevo.",
     tags=["Documentos"],
 )
 def ingest(
+    response: Response,
     file: UploadFile = File(...),
     settings: Settings = Depends(get_settings),
     embedder: Embedder = Depends(get_embedder),
@@ -102,6 +107,33 @@ def ingest(
     data = file.file.read(max_bytes + 1)
     if len(data) > max_bytes:
         raise HTTPException(413, f"El archivo supera {settings.max_upload_mb} MB")
+
+    content_hash = hashlib.sha256(data).hexdigest()
+    try:
+        current = store.get_document(source)
+        twin = None if current else store.find_by_hash(content_hash)
+    except _STORE_ERRORS as exc:
+        logger.exception("Error al consultar Qdrant")
+        raise HTTPException(503, "Base vectorial no disponible") from exc
+    if current and current.content_hash == content_hash:
+        response.status_code = 200
+        return IngestResponse(
+            source=source,
+            doc_type=current.doc_type,
+            chunks=current.chunks,
+            status="unchanged",
+            ingested_at=current.ingested_at,
+        )
+    if twin:
+        response.status_code = 200
+        return IngestResponse(
+            source=source,
+            doc_type=doc_type,
+            chunks=0,
+            status="duplicate",
+            ingested_at=datetime.now(timezone.utc).isoformat(),
+            duplicate_of=twin,
+        )
 
     try:
         sections = parse_document(source, data)
@@ -121,16 +153,19 @@ def ingest(
     vectors = embedder.embed_documents([chunk.embedding_text for chunk in chunks])
     ingested_at = datetime.now(timezone.utc).isoformat()
     try:
-        replaced = store.replace_document(source, doc_type, chunks, vectors, ingested_at)
+        replaced = store.replace_document(
+            source, doc_type, chunks, vectors, ingested_at, content_hash
+        )
     except _STORE_ERRORS as exc:
         logger.exception("Error al escribir en Qdrant")
         raise HTTPException(503, "Base vectorial no disponible") from exc
 
+    response.status_code = 200 if replaced else 201
     return IngestResponse(
         source=source,
         doc_type=doc_type,
         chunks=len(chunks),
-        replaced=replaced,
+        status="updated" if replaced else "created",
         ingested_at=ingested_at,
     )
 

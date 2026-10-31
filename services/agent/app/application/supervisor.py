@@ -1,15 +1,19 @@
 import logging
 import operator
+import queue
+import threading
 import uuid
+from collections.abc import Iterator
 from typing import Annotated, TypedDict
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from app.application.doc_agent import DocAgent
 from app.application.research_agent import ResearchAgent
-from app.application.tracing import traced
+from app.application.tracing import step_listener, traced
 from app.domain.errors import LLMError
 from app.domain.models import Answer, Citation, Route, Step, Turn
 from app.domain.ports import DocumentCatalog, SupervisorTasks
@@ -48,12 +52,14 @@ class Assistant:
         catalog: DocumentCatalog,
         checkpointer: BaseCheckpointSaver,
         history_turns: int = 6,
+        callbacks: list[BaseCallbackHandler] | None = None,
     ) -> None:
         self._tasks = tasks
         self._docs = docs
         self._research = research
         self._catalog = catalog
         self._history_turns = history_turns
+        self._callbacks = callbacks or []
         self.graph = self._build(checkpointer)
 
     @property
@@ -102,7 +108,12 @@ class Assistant:
                 "citations": [],
                 "steps": [],
             },
-            config={"configurable": {"thread_id": thread_id}},
+            config={
+                "configurable": {"thread_id": thread_id},
+                "run_name": "asistente",
+                "callbacks": self._callbacks,
+                "metadata": {"langfuse_session_id": thread_id},
+            },
         )
         return Answer(
             thread_id=thread_id,
@@ -113,6 +124,24 @@ class Assistant:
             citations=state["citations"],
             steps=state["steps"],
         )
+
+    def stream(
+        self, question: str, thread_id: str | None = None, sources: list[str] | None = None
+    ) -> Iterator[tuple[str, Step | Answer | Exception]]:
+        events: queue.Queue[tuple[str, Step | Answer | Exception] | None] = queue.Queue()
+
+        def work() -> None:
+            step_listener.set(lambda step: events.put(("step", step)))
+            try:
+                events.put(("answer", self.ask(question, thread_id, sources)))
+            except Exception as exc:
+                events.put(("error", exc))
+            finally:
+                events.put(None)
+
+        threading.Thread(target=work, daemon=True).start()
+        while (event := events.get()) is not None:
+            yield event
 
     def _recent_history(self, state: SupervisorState) -> list[Turn]:
         return state.get("history", [])[-self._history_turns :]

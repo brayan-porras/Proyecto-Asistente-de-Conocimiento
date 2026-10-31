@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from langchain_core.callbacks import BaseCallbackHandler
 from ddgs.exceptions import DDGSException
 from fastapi.testclient import TestClient
 
@@ -17,6 +18,7 @@ from app.domain.errors import LLMError, RetrievalError, WebSearchError
 from app.domain.models import RetrievedChunk, Route, RoutingDecision, WebResult, WebSearchRequest
 from app.domain.ports import Out
 from app.infrastructure.config import Settings
+from app.infrastructure import observability
 from app.infrastructure.groq_tasks import GroqClient
 from app.infrastructure.ingestion_client import IngestionClient
 from app.infrastructure.web_search import DuckDuckGoSearch, TavilySearch, build_web_search
@@ -111,6 +113,7 @@ def build(
     web_results=(web_result(0),),
     catalog=("guia.md",),
     history_turns=6,
+    callbacks=None,
 ):
     supervisor = supervisor or supervisor_tasks()
     search, web = Seq([chunk(0)]), fake_web(list(web_results))
@@ -121,6 +124,7 @@ def build(
         SimpleNamespace(sources=lambda: list(catalog)),
         build_checkpointer(),
         history_turns,
+        callbacks,
     )
     return assistant, supervisor, search, web
 
@@ -499,6 +503,54 @@ def test_api_llm_failure_is_a_502_with_a_message():
     with TestClient(create_app(build(supervisor)[0])) as test_client:
         response = test_client.post("/query", json={"question": "hola"})
     assert response.status_code == 502 and "sin cuota" in response.json()["detail"]
+
+
+def sse_kinds(client, question="hola"):
+    with client.stream("POST", "/query/stream", json={"question": question}) as response:
+        body = response.read().decode()
+    return [block.splitlines()[0] for block in body.strip().split("\n\n")], body
+
+
+def test_stream_emits_steps_live_then_the_answer(client):
+    events = list(build()[0].stream("¿cómo funciona?"))
+    assert [kind for kind, _ in events] == ["step"] * 4 + ["answer"]
+    assert [f"{s.agent}.{s.node}" for _, s in events[:-1]] == path(events[-1][1])
+
+    kinds, body = sse_kinds(client)
+    assert kinds == ["event: step"] * 4 + ["event: answer"]
+    assert '"nodes_traversed"' in body
+
+    supervisor = supervisor_tasks(Route.DIRECT)
+    supervisor.answer_directly = Seq(LLMError("sin cuota"))
+    with TestClient(create_app(build(supervisor)[0])) as failing:
+        kinds, body = sse_kinds(failing)
+    assert kinds == ["event: step", "event: error"] and "sin cuota" in body
+
+
+class Recorder(BaseCallbackHandler):
+    def __init__(self):
+        self.nodes, self.sessions = [], set()
+
+    def on_chain_start(self, serialized, inputs, *, metadata=None, **kwargs):
+        self.nodes.append(kwargs.get("name"))
+        if metadata and "langfuse_session_id" in metadata:
+            self.sessions.add(metadata["langfuse_session_id"])
+
+
+def test_callbacks_receive_every_node_and_the_session_id():
+    recorder = Recorder()
+    build(callbacks=[recorder])[0].ask("¿cómo funciona?", thread_id="sesion-1")
+    assert {"router", "docs_agent", "remember"} <= set(recorder.nodes)
+    assert recorder.sessions == {"sesion-1"}
+
+
+def test_langfuse_is_enabled_only_with_both_keys():
+    assert observability.build_callbacks(Settings(_env_file=None)) == []
+    assert observability.build_callbacks(Settings(_env_file=None, langfuse_public_key="pk")) == []
+    pytest.importorskip("langfuse")
+    enabled = Settings(_env_file=None, langfuse_public_key="pk-lf-test", langfuse_secret_key="sk-lf-test")
+    assert len(observability.build_callbacks(enabled)) == 1
+    observability._client = None
 
 
 def test_checkpoints_roundtrip_without_warnings_and_missing_key_fails_clearly(caplog):

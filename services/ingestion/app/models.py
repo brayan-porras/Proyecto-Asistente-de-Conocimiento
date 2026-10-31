@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -25,12 +26,16 @@ class Chunk:
         return f"{self.section}\n\n{self.text}" if self.section else self.text
 
 
+IngestStatus = Literal["created", "updated", "unchanged", "duplicate"]
+
+
 class IngestResponse(BaseModel):
     source: str
     doc_type: str
     chunks: int
-    replaced: bool
+    status: IngestStatus
     ingested_at: str
+    duplicate_of: str | None = None
 
 
 class DocumentInfo(BaseModel):
@@ -38,6 +43,7 @@ class DocumentInfo(BaseModel):
     doc_type: str
     chunks: int
     ingested_at: str
+    content_hash: str | None = None
 
 
 class SearchRequest(BaseModel):

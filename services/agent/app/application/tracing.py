@@ -1,9 +1,14 @@
 import functools
 import time
 from collections.abc import Callable
+from contextvars import ContextVar
 from typing import Any
 
 from app.domain.models import Step
+
+step_listener: ContextVar[Callable[[Step], None] | None] = ContextVar(
+    "step_listener", default=None
+)
 
 
 def traced(agent: str, node: str) -> Callable:
@@ -20,6 +25,9 @@ def traced(agent: str, node: str) -> Callable:
                 detail=update.pop("_detail", ""),
             )
             update["steps"] = [step]
+            listener = step_listener.get()
+            if listener:
+                listener(step)
             return update
 
         return wrapper

@@ -1,4 +1,6 @@
+import json
 import os
+from collections.abc import Iterator
 from urllib.parse import quote
 
 import httpx
@@ -35,11 +37,24 @@ def _call(method: str, url: str, timeout: float, **kwargs):
     return response.json()
 
 
-def ask(question: str, thread_id: str, sources: list[str]) -> dict:
+def ask_stream(question: str, thread_id: str, sources: list[str]) -> Iterator[tuple[str, dict]]:
     payload = {"question": question, "thread_id": thread_id}
     if sources:
         payload["sources"] = sources
-    return _call("POST", f"{AGENT_URL}/query", QUERY_TIMEOUT_S, json=payload)
+    url = f"{AGENT_URL}/query/stream"
+    try:
+        with httpx.stream("POST", url, json=payload, timeout=QUERY_TIMEOUT_S) as response:
+            if response.is_error:
+                response.read()
+                raise ApiError(_detail(response))
+            event = ""
+            for line in response.iter_lines():
+                if line.startswith("event: "):
+                    event = line.removeprefix("event: ")
+                elif line.startswith("data: "):
+                    yield event, json.loads(line.removeprefix("data: "))
+    except httpx.HTTPError as exc:
+        raise ApiError(f"No se pudo conectar con {url}: {exc}") from exc
 
 
 def list_documents() -> list[dict]:

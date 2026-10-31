@@ -15,9 +15,10 @@ from app.application.citations import build_citations, normalize_markers  # noqa
 from app.application.supervisor import NOT_FOUND_ANSWER  # noqa: E402
 from app.bootstrap import build_assistant  # noqa: E402
 from app.domain.errors import AgentError  # noqa: E402
+from app.domain.models import Turn  # noqa: E402
 from app.domain.ports import NO_CONTEXT  # noqa: E402
 from app.infrastructure.config import get_settings  # noqa: E402
-from app.infrastructure.groq_tasks import GroqClient  # noqa: E402
+from app.infrastructure.groq_tasks import GroqClient, GroqSupervisorTasks  # noqa: E402
 from app.infrastructure.ingestion_client import IngestionClient  # noqa: E402
 from app.infrastructure.observability import flush  # noqa: E402
 from app.infrastructure.prompts import GENERATOR_SYSTEM, format_for_generator  # noqa: E402
@@ -214,6 +215,30 @@ def save(results: list[dict], output_dir: Path) -> None:
         (output_dir / "report.md").write_text(build_report(results), encoding="utf-8")
 
 
+def routing_only(items: list[dict], settings) -> int:
+    tasks = GroqSupervisorTasks(GroqClient(settings))
+    sources = IngestionClient(settings.ingestion_url, settings.retrieval_timeout_s).sources()
+    by_id = {item["id"]: item for item in items}
+    rows = []
+    for item in items:
+        history = []
+        if item.get("after"):
+            previous = by_id[item["after"]]
+            history = [Turn(question=previous["question"], answer=previous["reference"])]
+        try:
+            route = tasks.route(item["question"], history, sources).value.route.value
+        except AgentError as exc:
+            print(f"Falló el router en {item['id']}: {exc}")
+            return 2
+        rows.append((item["id"], item["expected_route"], route))
+        print(f"{item['id']} esperada={item['expected_route']:8} elegida={route}")
+    correct = sum(expected == got for _, expected, got in rows)
+    print(f"\nRuta correcta: {correct}/{len(rows)} ({pct(correct / len(rows))})")
+    wrong = [f"{i} ({e} -> {g})" for i, e, g in rows if e != g]
+    print("Errores: " + (", ".join(wrong) or "ninguno"))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=ROOT / "eval" / "dataset.json")
@@ -221,10 +246,13 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--routing-only", action="store_true")
     args = parser.parse_args()
 
     items = json.loads(args.dataset.read_text(encoding="utf-8"))[: args.limit]
     settings = get_settings()
+    if args.routing_only:
+        return routing_only(items, settings)
     top_k = args.top_k or settings.retrieval_top_k
     assistant = build_assistant(settings)
     llm = GroqClient(settings)
@@ -245,7 +273,9 @@ def main() -> int:
             verdict = judge(llm, item, run)
             if rate_limited(run, verdict):
                 save(results, args.output_dir)
-                print(f"Cuota de Groq agotada en {item['id']}: vuelve a ejecutar con --resume")
+                cause = run["error"] or verdict["reason"] if not run["router_failed"] else "el router falló"
+                print(f"Cuota de Groq agotada en {item['id']} ({system}): {cause}")
+                print("Vuelve a ejecutar con --resume cuando pase el tiempo indicado")
                 return 2
             row = {
                 "id": item["id"], "system": system, "category": item["category"],

@@ -7,6 +7,7 @@ Uso, desde la raíz del repo y con el servicio de ingesta corriendo:
 import argparse
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 
 import httpx
@@ -62,6 +63,7 @@ def download(data_dir: Path) -> list[Path]:
 def ingest(files: list[Path], ingestion_url: str) -> int:
     failures = 0
     total_chunks = 0
+    statuses: Counter[str] = Counter()
     started = time.perf_counter()
     with httpx.Client(timeout=900) as client:
         for path in files:
@@ -69,15 +71,17 @@ def ingest(files: list[Path], ingestion_url: str) -> int:
                 response = client.post(
                     f"{ingestion_url}/ingest", files={"file": (path.name, handle)}
                 )
-            if response.status_code == 201:
-                chunks = response.json()["chunks"]
-                total_chunks += chunks
-                print(f"ok    {path.name}: {chunks} chunks")
+            if response.is_success:
+                body = response.json()
+                total_chunks += body["chunks"]
+                statuses[body["status"]] += 1
+                print(f"{body['status']:9} {path.name}: {body['chunks']} chunks")
             else:
                 failures += 1
                 print(f"error {path.name}: {response.status_code} {response.text}")
     elapsed = time.perf_counter() - started
-    print(f"\n{len(files) - failures}/{len(files)} documentos, {total_chunks} chunks, {elapsed:.0f}s")
+    summary = ", ".join(f"{count} {status}" for status, count in sorted(statuses.items()))
+    print(f"\n{len(files) - failures}/{len(files)} documentos ({summary}), {total_chunks} chunks, {elapsed:.0f}s")
     return failures
 
 

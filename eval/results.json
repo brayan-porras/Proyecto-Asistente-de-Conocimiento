@@ -1,0 +1,792 @@
+[
+  {
+    "id": "d01",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Qué error se produce cuando un grafo de LangGraph alcanza el máximo de pasos y cómo se aumenta el límite?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-GRAPH_RECURSION_LIMIT.md",
+      "langgraph-graph-api.md"
+    ],
+    "answer": "El error que se lanza es `GraphRecursionError` cuando el grafo supera el número máximo de super‑steps configurado [1][5].  \nPara aumentar el límite basta con pasar un valor mayor en la clave `recursion_limit` del diccionario `config` al invocar o hacer streaming del grafo, por ejemplo:\n\n```python\ngraph.invoke(inputs, config={\"recursion_limit\": 15000}, context={\"llm\": \"anthropic\"})\n```\n\nEsto sobrescribe el límite predeterminado (10 007 en la versión ≥ 1.1.4) con el valor que se indique [1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-graph-api.md",
+      "langgraph-use-graph-api.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-graph-api.md",
+      "langgraph-use-graph-api.md"
+    ],
+    "ms": 7862,
+    "tokens": 3646,
+    "error": null,
+    "thread_id": "fd18cf9100d146c7a562ffc1b0c9d321",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta menciona el error GraphRecursionError y explica que se aumenta el límite pasando un valor mayor en la clave recursion_limit del config, tal como indica la referencia. La información adicional (ejemplo con 15000, valor predeterminado) no contradice la referencia.",
+    "source_hit": true
+  },
+  {
+    "id": "d01",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Qué error se produce cuando un grafo de LangGraph alcanza el máximo de pasos y cómo se aumenta el límite?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-GRAPH_RECURSION_LIMIT.md",
+      "langgraph-graph-api.md"
+    ],
+    "answer": "El error que se lanza es **`GraphRecursionError`** cuando el grafo supera el número máximo de super‑steps configurado [1][5].  \nPara aumentar el límite basta con establecer la clave `recursion_limit` en el diccionario de configuración que se pasa a `invoke` (o `stream`) del grafo; por ejemplo:\n\n```python\ngraph.invoke(inputs, config={\"recursion_limit\": 5}, context={\"llm\": \"anthropic\"})\n```\n\no bien al llamar directamente:\n\n```python\ngraph.invoke({\"aggregate\": []}, {\"recursion_limit\": 4})\n```\n\nEsto eleva el número máximo de pasos permitidos antes de que se produzca el `GraphRecursionError` [1][5].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-graph-api.md",
+      "langgraph-use-graph-api.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-graph-api.md",
+      "langgraph-use-graph-api.md"
+    ],
+    "ms": 2815,
+    "tokens": 1525,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta menciona el error GraphRecursionError y explica que se aumenta el límite pasando un valor mayor a recursion_limit en la configuración del grafo, tal como indica la referencia. No contradice la referencia y cubre la información clave.",
+    "source_hit": true
+  },
+  {
+    "id": "d02",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Qué hay que hacer para corregir el error MISSING_CHECKPOINTER?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "answer": "Para corregir el error **MISSING_CHECKPOINTER** debes proporcionar un checkpointer al compilar el grafo o al definir el punto de entrada:\n\n- Inicializa un checkpointer (p. ej., `InMemorySaver`) y pásalo al método `compile()` de `StateGraph` o al decorador `@entrypoint`[1].  \n- Alternativamente, usa la API de LangGraph, que gestiona automáticamente la persistencia sin que tengas que configurar manualmente los checkpointers[1].  \n\nEl error ocurre porque falta ese checkpointer en la llamada a `compile()` o en `@entrypoint`[2].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md",
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md",
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "ms": 3884,
+    "tokens": 2751,
+    "error": null,
+    "thread_id": "2de513c65eac456cb5b526d05ba551aa",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: pasar un checkpointer (por ejemplo InMemorySaver) al método compile() del StateGraph o al decorador @entrypoint. No contradice la referencia y añade información complementaria sin ser incorrecta.",
+    "source_hit": true
+  },
+  {
+    "id": "d02",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Qué hay que hacer para corregir el error MISSING_CHECKPOINTER?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "answer": "Para corregir el error **MISSING_CHECKPOINTER** debes proporcionar un checkpointer al compilar el grafo o al definir el punto de entrada:\n\n1. **Crear e inicializar un checkpointer** (por ejemplo, `InMemorySaver`).  \n2. **Pasarlo al método `compile()`** de `StateGraph` o al decorador `@entrypoint`.  \n\nEjemplo con la API de grafos:\n\n```python\nfrom langgraph.checkpoint.memory import InMemorySaver\ncheckpointer = InMemorySaver()\n\nfrom langgraph.graph import StateGraph\ngraph = StateGraph(...).compile(checkpointer=checkpointer)\n```\n\nEjemplo con la API funcional:\n\n```python\nfrom langgraph.checkpoint.memory import InMemorySaver\ncheckpointer = InMemorySaver()\n\nfrom langgraph.func import entrypoint\n@entrypoint(checkpointer=checkpointer)\ndef workflow(messages: list[str]) -> str:\n    ...\n```\n\nTambién puedes usar la API de LangGraph, que gestiona automáticamente la persistencia y evita tener que configurar manualmente los checkpointers[1].  \n\nEl error ocurre porque falta ese `checkpointer` en la llamada a `compile()` o en `@entrypoint`[3].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md",
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-errors-MISSING_CHECKPOINTER.md",
+      "langgraph-errors-MISSING_CHECKPOINTER.md"
+    ],
+    "ms": 3029,
+    "tokens": 1453,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye exactamente la información clave de la referencia: pasar un checkpointer (por ejemplo InMemorySaver) al método compile() del StateGraph o al decorador @entrypoint en la Functional API, y lo explica con ejemplos. No contradice la referencia y no añade datos inventados.",
+    "source_hit": true
+  },
+  {
+    "id": "d03",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Cómo se soluciona el error INVALID_CONCURRENT_GRAPH_UPDATE cuando varios nodos escriben la misma clave del estado en paralelo?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "answer": "Se soluciona definiendo un *reducer* para la clave que pueden actualizar varios nodos en paralelo. En lugar de usar un tipo simple (por ejemplo `str`), declare la clave como una lista y asocie una función reductora (como `operator.add`) que combine los valores que provienen de los distintos nodos:\n\n```python\nimport operator\nfrom typing import Annotated, TypedDict\n\nclass State(TypedDict):\n    # El reducer operator.add hace que la lista sea de solo‑añadido\n    some_key: Annotated[list, operator.add]\n```\n\nCon este reducer, los valores devueltos por los nodos concurrentes se combinarán (se concatenarán) en lugar de sobrescribirse, evitando el error `INVALID_CONCURRENT_GRAPH_UPDATE`[2]. Además, si el grafo ejecuta nodos en paralelo, asegúrese de haber definido las claves de estado relevantes con un reducer[1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "ms": 4812,
+    "tokens": 3180,
+    "error": null,
+    "thread_id": "c4961e041bf1447ba2509cd6ebfeb701",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta indica que se debe definir un reducer (usando Annotated con operator.add) para la clave del estado, tal como indica la referencia, y explica que combina los valores de los nodos paralelos. No contradice la referencia y cubre la información clave.",
+    "source_hit": true
+  },
+  {
+    "id": "d03",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Cómo se soluciona el error INVALID_CONCURRENT_GRAPH_UPDATE cuando varios nodos escriben la misma clave del estado en paralelo?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "answer": "Se soluciona definiendo un *reducer* para la clave que es escrita por varios nodos en paralelo, de modo que los valores devueltos se combinen en lugar de sobrescribirse. Por ejemplo, declarando la clave con `Annotated[list, operator.add]` permite que cada nodo añada su valor a una lista y evita el conflicto [2][1]. Además, asegúrate de que la clave tenga un reducer compatible antes de usar fan‑out o cualquier ejecución paralela [3].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "citations": 3,
+    "cited": [
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md",
+      "langgraph-errors-INVALID_CONCURRENT_GRAPH_UPDATE.md"
+    ],
+    "ms": 2902,
+    "tokens": 1352,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: definir un reducer (por ejemplo Annotated con operator.add) para combinar los valores escritos en paralelo, evitando el error. No contradice la referencia y cubre el criterio solicitado.",
+    "source_hit": true
+  },
+  {
+    "id": "d04",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Cómo se agrega un subgrafo como nodo de un grafo padre?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-subgraphs.md"
+    ],
+    "answer": "Para agregar un subgrafo como nodo del grafo padre basta con compilar el subgrafo y pasarlo directamente a `add_node` del grafo padre; no se necesita una función wrapper porque el subgrafo leerá y escribirá en los mismos canales de estado que el padre[1][4].  \n\nEjemplo:\n\n```python\n# Definir el subgrafo y compilarlo\nsubgraph = subgraph_builder.compile()\n\n# Definir el grafo padre\nbuilder = StateGraph(ParentState)\nbuilder.add_node(\"node_2\", subgraph)   # ← subgrafo añadido como nodo\nbuilder.add_edge(START, \"node_2\")\ngraph = builder.compile()\n```[5]",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "citations": 3,
+    "cited": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "ms": 15164,
+    "tokens": 4457,
+    "error": null,
+    "thread_id": "6e9ad196a4f945cba0241cb9557c4f20",
+    "router_failed": false,
+    "score": 3,
+    "correct": false,
+    "hallucination": false,
+    "reason": "Falta mencionar la alternativa cuando los esquemas de estado son distintos, por lo que la respuesta no cubre completamente la referencia.",
+    "source_hit": true
+  },
+  {
+    "id": "d04",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Cómo se agrega un subgrafo como nodo de un grafo padre?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-subgraphs.md"
+    ],
+    "answer": "Para agregar un subgrafo como nodo del grafo padre basta con compilar el subgrafo y pasarlo directamente a `add_node` del grafo padre; no se necesita ninguna función wrapper porque el subgrafo leerá y escribirá en los mismos canales de estado que el padre[1][4].  \n\nEjemplo típico:\n\n```python\n# Definir y compilar el subgrafo\nsubgraph_builder = StateGraph(SubgraphState)\nsubgraph_builder.add_node(subgraph_node_1)\nsubgraph_builder.add_node(subgraph_node_2)\nsubgraph_builder.add_edge(START, \"subgraph_node_1\")\nsubgraph_builder.add_edge(\"subgraph_node_1\", \"subgraph_node_2\")\nsubgraph = subgraph_builder.compile()\n\n# Definir el grafo padre y agregar el subgrafo como nodo\nbuilder = StateGraph(ParentState)\nbuilder.add_node(\"node_1\", node_1)          # nodo del padre\nbuilder.add_node(\"node_2\", subgraph)       # ← subgrafo añadido como nodo\nbuilder.add_edge(START, \"node_1\")\nbuilder.add_edge(\"node_1\", \"node_2\")\ngraph = builder.compile()\n```[5]",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "citations": 3,
+    "cited": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "ms": 13511,
+    "tokens": 2024,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 3,
+    "correct": false,
+    "hallucination": false,
+    "reason": "La respuesta menciona correctamente que, cuando el grafo padre y el subgrafo comparten claves de estado, se puede pasar el subgrafo compilado directamente a add_node. Sin embargo, omite el caso en que los esquemas de estado son diferentes, donde la referencia indica que se debe envolver el subgrafo en una función nodo que transforme el estado. Por lo tanto, la respuesta está incompleta y no cumple totalmente con la referencia.",
+    "source_hit": true
+  },
+  {
+    "id": "d05",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Y si el subgrafo no comparte claves de estado con el grafo padre?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-subgraphs.md"
+    ],
+    "answer": "Si el subgrafo no comparte claves de estado con el grafo padre, debes usar el patrón **“Call a subgraph inside a node”**. En este caso se escribe una función wrapper que transforma el estado del padre en la entrada que espera el subgrafo y, tras la invocación, vuelve a mapear la salida del subgrafo al estado del padre [3]. Los ejemplos de código muestran cómo crear esa función wrapper tanto para el subgrafo “grandchild” como para el subgrafo “child” [1][2].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "citations": 3,
+    "cited": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "ms": 8289,
+    "tokens": 3782,
+    "error": null,
+    "thread_id": "6e9ad196a4f945cba0241cb9557c4f20",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta describe exactamente el patrón indicado en la referencia: invocar el subgrafo dentro de una función nodo que transforma el estado del padre al del subgrafo y viceversa. No contradice la referencia y cubre la información clave.",
+    "source_hit": true
+  },
+  {
+    "id": "d05",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Y si el subgrafo no comparte claves de estado con el grafo padre?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-subgraphs.md"
+    ],
+    "answer": "Si el subgrafo no comparte claves de estado con el grafo padre, debes usar el patrón **“Call a subgraph inside a node”**. En este caso se escribe una función wrapper que transforma el estado del padre al esquema de entrada del subgrafo y, después de invocarlo, vuelve a mapear la salida del subgrafo al esquema del padre [6][1].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-use-subgraphs.md",
+      "langgraph-use-subgraphs.md"
+    ],
+    "ms": 13270,
+    "tokens": 1676,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta reproduce fielmente la información de la referencia, indicando que se invoca el subgrafo dentro de una función nodo que transforma el estado del padre al del subgrafo y viceversa. No hay contradicciones ni datos inventados.",
+    "source_hit": true
+  },
+  {
+    "id": "d06",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Qué es time travel en LangGraph y qué diferencia hay entre replay y fork?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-time-travel.md"
+    ],
+    "answer": "Time travel es la capacidad de volver a un punto guardado (checkpoint) en una ejecución de LangGraph y continuar la ejecución desde allí — los nodos anteriores al checkpoint no se vuelven a ejecutar porque sus resultados ya están almacenados[1].\n\n- **Replay**: re‑ejecuta los nodos que están después del checkpoint seleccionado. Se usa el mismo checkpoint y simplemente se “re‑intenta” la ruta original; los resultados de los nodos previos se reutilizan y los nodos posteriores (incluyendo llamadas a LLM, APIs e interrupciones) se vuelven a disparar, pudiendo producir resultados diferentes[1][3].  \n- **Fork**: crea una rama a partir de un checkpoint, pero permite modificar el estado antes de continuar. Así se explora una ruta alternativa con un estado alterado, en lugar de simplemente re‑intentar la misma secuencia[1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-use-time-travel.md",
+      "langgraph-checkpointers.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-use-time-travel.md",
+      "langgraph-checkpointers.md"
+    ],
+    "ms": 9454,
+    "tokens": 3653,
+    "error": null,
+    "thread_id": "30a7572f97704f14ab18a6acd5fbf730",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta reproduce fielmente la definición de time travel y diferencia claramente entre replay y fork tal como indica la referencia, sin añadir información contradictoria.",
+    "source_hit": true
+  },
+  {
+    "id": "d06",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Qué es time travel en LangGraph y qué diferencia hay entre replay y fork?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-use-time-travel.md"
+    ],
+    "answer": "Time travel es la capacidad de LangGraph de volver a un punto guardado — un **checkpoint** — y continuar la ejecución desde allí. Los nodos anteriores al checkpoint no se vuelven a ejecutar porque sus resultados ya están almacenados; los nodos posteriores se vuelven a ejecutar, lo que incluye llamadas a LLM, peticiones a APIs y interrupts​[1][3].\n\n**Replay** consiste en re‑ejecutar la rama original a partir de un checkpoint previo. Se invoca el grafo con el `checkpoint_id` deseado y se vuelve a correr todo lo que sigue al checkpoint, obteniendo de nuevo los mismos (o diferentes, si son no deterministas) resultados​[1][3][5].\n\n**Fork** crea una nueva rama a partir de un checkpoint, pero permite modificar el estado antes de continuar. De esta forma se explora un camino alternativo sin alterar la ejecución original​[1]. En resumen, replay repite la misma trayectoria, mientras que fork bifurca la ejecución para probar una variante diferente​[1].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-use-time-travel.md",
+      "langgraph-checkpointers.md",
+      "langgraph-use-time-travel.md"
+    ],
+    "citations": 3,
+    "cited": [
+      "langgraph-use-time-travel.md",
+      "langgraph-checkpointers.md",
+      "langgraph-use-time-travel.md"
+    ],
+    "ms": 11930,
+    "tokens": 1491,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta reproduce fielmente la información de la referencia: define time travel como uso de checkpoints, explica que replay reejecuta desde un checkpoint previo y que fork crea una rama modificando el estado. No contradice la referencia y cubre todos los puntos clave.",
+    "source_hit": true
+  },
+  {
+    "id": "d07",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Cómo se pausa un grafo para pedir aprobación humana y cómo se reanuda?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-interrupts.md"
+    ],
+    "answer": "El grafo se detiene cuando llega a la llamada `interrupt()`. En ese momento se guarda todo el estado en el *checkpointer* y el flujo queda a la espera de la intervención humana. Más tarde, cuando se recibe la aprobación, el grafo se vuelve a ejecutar y retoma exactamente desde el punto donde se había detenido, usando el mismo `thread_id` para recuperar todo el estado guardado[1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-thinking-in-langgraph.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-thinking-in-langgraph.md"
+    ],
+    "ms": 3975,
+    "tokens": 2271,
+    "error": null,
+    "thread_id": "e96ad5199edb432185d43accf0618a73",
+    "router_failed": false,
+    "score": 3,
+    "correct": false,
+    "hallucination": false,
+    "reason": "La respuesta menciona que el grafo se detiene con `interrupt()` y que el estado se guarda, lo cual coincide con la referencia. Sin embargo, omite el detalle clave de que la reanudación se realiza invocando de nuevo el grafo con `Command(resume=...)` usando el valor devuelto por `interrupt()`. Añade información extra sobre el checkpointer y thread_id que no está en la referencia pero no constituye alucinación. Por ello la respuesta es parcialmente correcta pero incompleta.",
+    "source_hit": false
+  },
+  {
+    "id": "d07",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Cómo se pausa un grafo para pedir aprobación humana y cómo se reanuda?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-interrupts.md"
+    ],
+    "answer": "El grafo se pausa cuando llega a una llamada a `interrupt()`. En ese momento se guarda todo el estado en el *checkpointer* y el proceso queda a la espera de una intervención humana. Cuando la aprobación está disponible, el grafo puede reanudarse (incluso días después) usando el mismo `thread_id`, que garantiza que todo el estado de la conversación se recupere exactamente donde se dejó. [2]",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-thinking-in-langgraph.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-thinking-in-langgraph.md"
+    ],
+    "ms": 6837,
+    "tokens": 885,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 3,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta menciona que la pausa ocurre al llamar a `interrupt()` y que el grafo puede reanudarse posteriormente, lo cual coincide con la referencia. Sin embargo, omite el detalle específico de que la reanudación se realiza invocando de nuevo el grafo con `Command(resume=...)` y que el valor a reanudar es el devuelto por `interrupt()`. Por lo tanto, la información clave está presente pero incompleta.",
+    "source_hit": false
+  },
+  {
+    "id": "d08",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Qué checkpointer se usa con Postgres en LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-add-memory.md",
+      "langgraph-checkpointers.md",
+      "langgraph-persistence.md"
+    ],
+    "answer": "En LangGraph el checkpointer para Postgres es el **`PostgresSaver`** (y su versión asíncrona `AsyncPostgresSaver`) que se importa desde `langgraph.checkpoint.postgres`[2].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-add-memory.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-add-memory.md"
+    ],
+    "ms": 7098,
+    "tokens": 2851,
+    "error": null,
+    "thread_id": "b366dffa0d2b448cb444ff8ca9dbd2ef",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta menciona que el checkpointer usado con Postgres en LangGraph es PostgresSaver, tal como indica la referencia, y no introduce información contradictoria.",
+    "source_hit": true
+  },
+  {
+    "id": "d08",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Qué checkpointer se usa con Postgres en LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-add-memory.md",
+      "langgraph-checkpointers.md",
+      "langgraph-persistence.md"
+    ],
+    "answer": "Se usa el checkpointer **`PostgresSaver`** (y su versión asíncrona `AsyncPostgresSaver`) para Postgres en LangGraph[1].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-checkpointers.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-checkpointers.md"
+    ],
+    "ms": 7979,
+    "tokens": 1132,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta menciona que el checkpointer usado con Postgres en LangGraph es PostgresSaver, tal como indica la referencia, y no introduce información contradictoria.",
+    "source_hit": true
+  },
+  {
+    "id": "d09",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Para qué sirve el parámetro timeout en requests y qué pasa si no se define?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "requests-docs.pdf"
+    ],
+    "answer": "El parámetro `timeout` indica cuántos segundos debe esperar Requests antes de abandonar la operación: sirve para limitar tanto el tiempo de conexión como el tiempo de lectura de la respuesta del servidor[1]. Si no se define ningún valor de timeout, Requests no impone ningún límite y la llamada puede quedar bloqueada indefinidamente, haciendo que el programa se “cuelgue” durante minutos o más[1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "requests-docs.pdf"
+    ],
+    "citations": 1,
+    "cited": [
+      "requests-docs.pdf"
+    ],
+    "ms": 8074,
+    "tokens": 3753,
+    "error": null,
+    "thread_id": "48b6f9e5c2e3401a88c4c5420a8d1fa7",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: indica que timeout define cuántos segundos esperar antes de lanzar requests.exceptions.Timeout y que, si no se define, no hay expiración y la llamada puede quedar bloqueada indefinidamente. No contradice la referencia y es completa.",
+    "source_hit": true
+  },
+  {
+    "id": "d09",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Para qué sirve el parámetro timeout en requests y qué pasa si no se define?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "requests-docs.pdf"
+    ],
+    "answer": "El parámetro `timeout` indica cuántos segundos debe esperar Requests antes de abandonar la operación: sirve para limitar tanto el tiempo de conexión como el tiempo de lectura de la respuesta del servidor[1]. Si no se define ningún valor de timeout, Requests no impone ningún límite y la llamada puede quedar bloqueada indefinidamente, haciendo que el programa se “cuelgue” durante minutos o más[1].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "requests-docs.pdf"
+    ],
+    "citations": 1,
+    "cited": [
+      "requests-docs.pdf"
+    ],
+    "ms": 12060,
+    "tokens": 1460,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: indica que timeout define cuántos segundos esperar y que si no se define la petición nunca expira, pudiendo colgarse indefinidamente. No contradice la referencia y cubre todo lo solicitado.",
+    "source_hit": true
+  },
+  {
+    "id": "d10",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Qué ventaja tiene usar un objeto Session en requests?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "requests-docs.pdf"
+    ],
+    "answer": "Usar un objeto Session permite que la sesión conserve ciertos parámetros y, sobre todo, las cookies entre peticiones, y reutiliza las conexiones TCP mediante el pool de urllib3; al hacer varias solicitudes al mismo host se evita abrir una nueva conexión cada vez, lo que mejora notablemente el rendimiento[1].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "requests-docs.pdf"
+    ],
+    "citations": 1,
+    "cited": [
+      "requests-docs.pdf"
+    ],
+    "ms": 3606,
+    "tokens": 2808,
+    "error": null,
+    "thread_id": "b1f7d974b07a491292b217f4a262b76b",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: persiste parámetros y cookies y reutiliza la conexión TCP mediante el pool de urllib3, mejorando el rendimiento al hacer varias peticiones al mismo host. No contradice la referencia y la cita adicional no introduce datos falsos.",
+    "source_hit": true
+  },
+  {
+    "id": "d10",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Qué ventaja tiene usar un objeto Session en requests?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "requests-docs.pdf"
+    ],
+    "answer": "Usar un objeto Session permite persistir parámetros (como autenticación o encabezados) y cookies entre peticiones, y además reutiliza el pool de conexiones de urllib3, de modo que las solicitudes al mismo host comparten la misma conexión TCP, lo que mejora significativamente el rendimiento[4]",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "requests-docs.pdf"
+    ],
+    "citations": 1,
+    "cited": [
+      "requests-docs.pdf"
+    ],
+    "ms": 12574,
+    "tokens": 1502,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta incluye la información clave de la referencia: persiste parámetros y cookies y reutiliza el pool de conexiones TCP, mejorando el rendimiento. No contradice la referencia y es completa.",
+    "source_hit": true
+  },
+  {
+    "id": "d11",
+    "system": "agentic",
+    "category": "docs",
+    "question": "What are the stream modes available to stream a LangGraph graph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-streaming.md",
+      "langgraph-graph-api.md"
+    ],
+    "answer": "Los modos de transmisión que puedes pasar a `CompiledStateGraph.stream` o `CompiledStateGraph.astream` son:\n\n- `updates`\n- `values`\n- `messages`\n- `custom`\n- `checkpoints`\n- `tasks`\n- `debug`[1]",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-streaming.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-streaming.md"
+    ],
+    "ms": 3894,
+    "tokens": 2767,
+    "error": null,
+    "thread_id": "49808af72753402596e0cf575f690f3c",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "The response lists all the stream modes exactly as given in the reference (updates, values, messages, custom, checkpoints, tasks, debug) and does not add contradictory information.",
+    "source_hit": true
+  },
+  {
+    "id": "d11",
+    "system": "linear",
+    "category": "docs",
+    "question": "What are the stream modes available to stream a LangGraph graph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-streaming.md",
+      "langgraph-graph-api.md"
+    ],
+    "answer": "Los modos de transmisión que puedes usar con `stream` o `astream` son:\n\n- `updates`\n- `values`\n- `messages`\n- `custom`\n- `checkpoints`\n- `tasks`\n- `debug`[1]",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-streaming.md"
+    ],
+    "citations": 1,
+    "cited": [
+      "langgraph-streaming.md"
+    ],
+    "ms": 10351,
+    "tokens": 1378,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "The answer lists exactly the stream modes mentioned in the reference (updates, values, messages, custom, checkpoints, tasks, debug) and provides them in English, matching the expected content.",
+    "source_hit": true
+  },
+  {
+    "id": "d12",
+    "system": "agentic",
+    "category": "docs",
+    "question": "¿Cuándo conviene usar la Graph API y cuándo la Functional API de LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-choosing-apis.md"
+    ],
+    "answer": "Usa la **Graph API** cuando necesites controlar explícitamente la estructura del flujo, manejar ramificaciones complejas, ejecutar pasos en paralelo o aprovechar ventajas de colaboración en equipo [1].\n\nUsa la **Functional API** cuando quieras añadir las funcionalidades de LangGraph (persistencia, memoria, interrupciones humanas, streaming) a código ya existente con cambios mínimos, tengas flujos lineales y sencillos, o necesites prototipar rápidamente [1][5].",
+    "route": "docs",
+    "agent": "docs",
+    "external": false,
+    "sources": [
+      "langgraph-choosing-apis.md",
+      "langgraph-choosing-apis.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-choosing-apis.md",
+      "langgraph-choosing-apis.md"
+    ],
+    "ms": 8028,
+    "tokens": 3170,
+    "error": null,
+    "thread_id": "8c6e212a90c3449985746f5421028700",
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "La respuesta reproduce fielmente los criterios de la referencia: indica que la Graph API es adecuada para flujos complejos, ramificaciones, paralelismo y visualización, y que la Functional API sirve para cambios mínimos sobre código existente, flujos lineales y prototipado rápido. No contiene contradicciones ni información inventada.",
+    "source_hit": true
+  },
+  {
+    "id": "d12",
+    "system": "linear",
+    "category": "docs",
+    "question": "¿Cuándo conviene usar la Graph API y cuándo la Functional API de LangGraph?",
+    "expected_route": "docs",
+    "expected_sources": [
+      "langgraph-choosing-apis.md"
+    ],
+    "answer": "Usa la **Graph API** cuando necesites control explícito sobre la estructura del flujo, con ramificaciones complejas, procesamiento en paralelo o cuando el trabajo en equipo se beneficie de una definición clara del grafo [1].\n\nUsa la **Functional API** cuando quieras añadir las funcionalidades de LangGraph (persistencia, memoria, streaming, interacción humana) a código ya existente con cambios mínimos, tengas flujos lineales y sencillos, o necesites prototipar rápidamente [1][5].",
+    "route": null,
+    "agent": "linear",
+    "external": false,
+    "sources": [
+      "langgraph-choosing-apis.md",
+      "langgraph-choosing-apis.md"
+    ],
+    "citations": 2,
+    "cited": [
+      "langgraph-choosing-apis.md",
+      "langgraph-choosing-apis.md"
+    ],
+    "ms": 8588,
+    "tokens": 1144,
+    "error": null,
+    "thread_id": null,
+    "router_failed": false,
+    "score": 5,
+    "correct": true,
+    "hallucination": false,
+    "reason": "The response mentions Graph API for complex, branched, parallel flows and explicit state, and Functional API for minimal changes to existing code, linear flows, and rapid prototyping, matching the reference.",
+    "source_hit": true
+  }
+]

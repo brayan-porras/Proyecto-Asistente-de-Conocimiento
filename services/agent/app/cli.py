@@ -4,6 +4,7 @@ import uuid
 
 from app.application.supervisor import Assistant
 from app.bootstrap import build_assistant
+from app.infrastructure.observability import flush
 from app.domain.errors import AgentError
 from app.domain.models import Answer
 from app.infrastructure.config import get_settings
@@ -65,4 +66,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    code = main()
+    flush()
+    sys.exit(code)
